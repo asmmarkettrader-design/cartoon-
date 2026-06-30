@@ -2,6 +2,7 @@
 import os
 import json
 import sys
+
 # Handling both legacy and new google-genai imports to prevent crashes
 try:
     from google import genai
@@ -10,7 +11,8 @@ except ImportError:
     import google.generativeai as genai
     USE_NEW_SDK = False
 
-from scripts.characters_config import SYSTEM_PROMPT_BASE
+# FIXED: Removed 'scripts.' because this file and characters_config are in the same folder
+from characters_config import SYSTEM_PROMPT_BASE
 
 def generate_new_episode():
     print("Generating a brand new cartoon story from Gemini...")
@@ -23,7 +25,6 @@ def generate_new_episode():
     prompt = SYSTEM_PROMPT_BASE + "\nGenerate a unique episode now. Make sure the threat is totally unexpected."
 
     if USE_NEW_SDK:
-        # Code logic for new google-genai SDK
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
             model='gemini-1.5-flash',
@@ -32,7 +33,6 @@ def generate_new_episode():
         )
         story_text = response.text
     else:
-        # Fallback for google-generativeai legacy library
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
             model_name="gemini-1.5-flash",
