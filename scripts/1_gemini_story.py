@@ -11,7 +11,6 @@ except ImportError:
     import google.generativeai as genai
     USE_NEW_SDK = False
 
-# FIXED: Removed 'scripts.' because this file and characters_config are in the same folder
 from characters_config import SYSTEM_PROMPT_BASE
 
 def generate_new_episode():
@@ -23,11 +22,14 @@ def generate_new_episode():
         sys.exit(1)
 
     prompt = SYSTEM_PROMPT_BASE + "\nGenerate a unique episode now. Make sure the threat is totally unexpected."
+    
+    # FIXED: Added '-latest' to the model name to prevent 404 Not Found errors
+    MODEL_NAME = 'gemini-1.5-flash-latest'
 
     if USE_NEW_SDK:
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model=MODEL_NAME,
             contents=prompt,
             config={'response_mime_type': 'application/json'}
         )
@@ -35,7 +37,7 @@ def generate_new_episode():
     else:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name=MODEL_NAME,
             generation_config={"response_mime_type": "application/json"}
         )
         response = model.generate_content(prompt)
