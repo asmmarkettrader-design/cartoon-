@@ -8,14 +8,25 @@ def optimize_blender_settings():
     try:
         import bpy
         scene = bpy.context.scene
-        scene.render.engine = 'BLENDER_EEVEE_NEXT'
+        
+        # AUTO-FALLBACK ENGINE SYSTEM
+        # Yeh check karega ke kon sa Eevee engine available hai aur usay select kar lega
+        try:
+            scene.render.engine = 'BLENDER_EEVEE_NEXT'
+            print("[BLENDER LOG] Using new BLENDER_EEVEE_NEXT engine.")
+        except TypeError:
+            scene.render.engine = 'BLENDER_EEVEE'
+            print("[BLENDER LOG] Using standard BLENDER_EEVEE engine.")
         
         # Performance Tweaks for GitHub Actions
         scene.render.resolution_x = 1920
         scene.render.resolution_y = 1080
         scene.render.resolution_percentage = 70 # High-quality downscaled for speed
         
-        scene.eevee.taa_render_samples = 32
+        # Setting low samples for fast cartoon rendering
+        if hasattr(scene, 'eevee'):
+            scene.eevee.taa_render_samples = 32
+            
         print("[BLENDER LOG] Engine and render parameters successfully optimized.")
     except ImportError:
         print("[ERROR] Not running inside Blender environment.")
@@ -25,6 +36,11 @@ def merge_audio_video():
     os.makedirs("output/video_folder", exist_ok=True)
     print("[FFMPEG LOG] Starting Audio and Video multiplexing...")
     
+    # Check if frames actually exist before running FFmpeg to avoid ugly errors
+    if not os.path.exists("output/frames") or not any(os.scandir("output/frames")):
+        print("[CRITICAL ERROR] No rendered frames found! Blender must have crashed or failed to save frames.")
+        sys.exit(1)
+        
     # Ensuring output files are fully integrated and merged seamlessly
     ffmpeg_cmd = (
         "ffmpeg -y -framerate 24 -i output/frames/%04d.png "
