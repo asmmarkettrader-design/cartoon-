@@ -4,28 +4,40 @@ import sys
 import subprocess
 
 def check_file_structure():
-    print("\n--- Deep Repository Scan ---")
+    print("\n--- Smart Deep Repository Scan ---")
     current_dir = os.getcwd()
     print(f"Current Directory: {current_dir}")
     
-    # Updated the expected name to match your actual file: blender_render.py
-    required_files = ["story_generator.py", "blender_render.py"]
     paths = {}
     
-    for file in required_files:
-        found = False
-        # Searches through all folders (like scripts/)
-        for root, dirs, files in os.walk("."):
-            if file in files:
-                full_path = os.path.join(root, file)
-                paths[file] = full_path
-                found = True
-                print(f"[FOUND] {file} located at: {full_path}")
+    # 1. Look for Story Generator
+    for root, dirs, files in os.walk("."):
+        for f in files:
+            if "story" in f.lower() and f.endswith(".py"):
+                paths["story_generator.py"] = os.path.join(root, f)
+                print(f"[FOUND STORY SCRIPT] -> {paths['story_generator.py']}")
                 break
-        if not found:
-            print(f"[CRITICAL ERROR] {file} is completely missing from the repository structure!")
-            print("Please check your 'scripts' folder and verify the filename.")
-            sys.exit(2)
+                
+    # 2. Look for Blender script with fuzzy matching (chahay naam kuch bhi ho, agar 'blender' shamil hai)
+    for root, dirs, files in os.walk("."):
+        for f in files:
+            if "blender" in f.lower() and (f.endswith(".py") or "." not in f):
+                paths["blender_render.py"] = os.path.join(root, f)
+                print(f"[FOUND BLENDER SCRIPT] -> {paths['blender_render.py']}")
+                break
+
+    # Critical Checks
+    if "story_generator.py" not in paths:
+        print("[CRITICAL ERROR] Story generator script (containing 'story') missing!")
+        sys.exit(2)
+    if "blender_render.py" not in paths:
+        print("\n[CRITICAL ERROR] Blender script missing!")
+        print(f"Files actually present in your directory structure are:")
+        for root, dirs, files in os.walk("."):
+            if "git" not in root:
+                print(f" Folder {root}: {files}")
+        sys.exit(2)
+        
     return paths
 
 def run_step(command, description):
@@ -37,7 +49,7 @@ def run_step(command, description):
         if output == '' and process.poll() is not None:
             break
         if output:
-            print(output.strip(), flush=True) # Real-time logs printing
+            print(output.strip(), flush=True)
             
     rc = process.poll()
     print(f"==================== FINISHED: {description} (Exit Code: {rc}) ====================\n")
@@ -46,7 +58,6 @@ def run_step(command, description):
 def main():
     print("Initiating Procedural Animation Workflow...")
     
-    # Auto-detect the exact paths
     file_paths = check_file_structure()
     
     # Step 1: Generate Story
@@ -56,7 +67,7 @@ def main():
         print("Story generation failed. Exiting workflow.")
         sys.exit(1)
         
-    # Step 2: Blender Render (Using blender_render.py)
+    # Step 2: Blender Render
     blender_command = f"timeout 270m blender -b -P {file_paths['blender_render.py']} -- --blender"
     rc = run_step(blender_command, "Blender Procedural Core Render Engine")
     if rc == 124:
