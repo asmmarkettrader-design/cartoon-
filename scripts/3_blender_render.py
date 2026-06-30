@@ -1,4 +1,4 @@
-# blender_render_pipeline.py
+# scripts/3_blender_render.py
 import os
 import sys
 import subprocess
@@ -10,10 +10,10 @@ def optimize_blender_settings():
         scene = bpy.context.scene
         scene.render.engine = 'BLENDER_EEVEE_NEXT'
         
-        # Output Resolution & Scale Optimization
+        # Performance Tweaks for GitHub Actions
         scene.render.resolution_x = 1920
         scene.render.resolution_y = 1080
-        scene.render.resolution_percentage = 70 # Speeds up rendering drastically on GitHub actions
+        scene.render.resolution_percentage = 70 # High-quality downscaled for speed
         
         scene.eevee.taa_render_samples = 32
         print("[BLENDER LOG] Engine and render parameters successfully optimized.")
@@ -25,6 +25,7 @@ def merge_audio_video():
     os.makedirs("output/video_folder", exist_ok=True)
     print("[FFMPEG LOG] Starting Audio and Video multiplexing...")
     
+    # Ensuring output files are fully integrated and merged seamlessly
     ffmpeg_cmd = (
         "ffmpeg -y -framerate 24 -i output/frames/%04d.png "
         "-i output/temp_full_audio.wav -c:v libx264 -pix_fmt yuv420p "
@@ -38,7 +39,8 @@ def merge_audio_video():
         print("[ERROR] FFmpeg multiplexing failed.")
 
 if __name__ == "__main__":
-    if "bpy" in sys.modules or len(sys.argv) > 1 and sys.argv[1] == "--blender":
+    # Checks if execution is internal to Blender or standard Python shell
+    if "bpy" in sys.modules or (len(sys.argv) > 1 and sys.argv[1] == "--blender"):
         optimize_blender_settings()
     else:
         merge_audio_video()
