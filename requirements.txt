@@ -1,5 +1,12 @@
+# --- GOOGLE AI SDKs ---
 google-genai
+google-generativeai
+
+# --- AUDIO & TTS PROCESSING (For Unique Character Voices) ---
+gTTS
+pydub
+numpy
+scipy
+
+# --- UTILITIES ---
 requests
-google-api-python-client
-google-auth-oauthlib
-google-auth-httplib2
