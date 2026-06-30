@@ -1,12 +1,12 @@
 name: Automatic Procedural Cartoon Generator
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Allows you to trigger the workflow manually from GitHub Actions tab
 
 jobs:
   build-and-render:
     runs-on: ubuntu-latest
-    timeout-minutes: 320
+    timeout-minutes: 320 # Absolute limit before GitHub cancels the job completely
 
     steps:
     - name: Checkout Repository
@@ -17,15 +17,15 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install System Dependencies & FFmpeg
+    - name: Install System Dependencies, FFmpeg & Audio Libs
       run: |
         sudo apt-get update
-        sudo apt-get install -y ffmpeg blender
+        sudo apt-get install -y ffmpeg blender libsndfile1 espeak-ng
 
     - name: Install Python Requirements & SDKs
       run: |
         pip install --upgrade pip
-        pip install google-generativeai google-genai
+        pip install -r requirements.txt
 
     - name: Run Main Control Pipeline (With Live Blender Logging)
       env:
@@ -33,7 +33,7 @@ jobs:
       run: python main.py
 
     - name: Upload Output Directory to Artifacts
-      if: always() # This forces folder generation and file upload even if things crashed partially
+      if: always() # Forces download folder creation even if Blender crashed or partially rendered
       uses: actions/upload-artifact@v4
       with:
         name: Final-Cartoon-Output
