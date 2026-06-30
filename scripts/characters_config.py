@@ -1,4 +1,4 @@
-# characters_config.py
+# scripts/characters_config.py
 
 SYSTEM_PROMPT_BASE = """
 You are an expert AI Storyteller for top-trending UK/USA kids' animated shows on YouTube.
