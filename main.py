@@ -5,12 +5,9 @@ import subprocess
 
 def check_file_structure():
     print("\n--- Smart Deep Repository Scan ---")
-    current_dir = os.getcwd()
-    print(f"Current Directory: {current_dir}")
-    
     paths = {}
     
-    # 1. Look for Story Generator
+    # 1. Fuzzy match for story generator
     for root, dirs, files in os.walk("."):
         for f in files:
             if "story" in f.lower() and f.endswith(".py"):
@@ -18,24 +15,16 @@ def check_file_structure():
                 print(f"[FOUND STORY SCRIPT] -> {paths['story_generator.py']}")
                 break
                 
-    # 2. Look for Blender script with fuzzy matching (chahay naam kuch bhi ho, agar 'blender' shamil hai)
+    # 2. Fuzzy match for blender renderer
     for root, dirs, files in os.walk("."):
         for f in files:
-            if "blender" in f.lower() and (f.endswith(".py") or "." not in f):
+            if "blender" in f.lower() and f.endswith(".py"):
                 paths["blender_render.py"] = os.path.join(root, f)
                 print(f"[FOUND BLENDER SCRIPT] -> {paths['blender_render.py']}")
                 break
 
-    # Critical Checks
-    if "story_generator.py" not in paths:
-        print("[CRITICAL ERROR] Story generator script (containing 'story') missing!")
-        sys.exit(2)
-    if "blender_render.py" not in paths:
-        print("\n[CRITICAL ERROR] Blender script missing!")
-        print(f"Files actually present in your directory structure are:")
-        for root, dirs, files in os.walk("."):
-            if "git" not in root:
-                print(f" Folder {root}: {files}")
+    if "story_generator.py" not in paths or "blender_render.py" not in paths:
+        print("[CRITICAL ERROR] Required workflow scripts are missing from the repository structure.")
         sys.exit(2)
         
     return paths
@@ -49,7 +38,7 @@ def run_step(command, description):
         if output == '' and process.poll() is not None:
             break
         if output:
-            print(output.strip(), flush=True)
+            print(output.strip(), flush=True) # Forces immediate execution prints to terminal
             
     rc = process.poll()
     print(f"==================== FINISHED: {description} (Exit Code: {rc}) ====================\n")
@@ -57,27 +46,26 @@ def run_step(command, description):
 
 def main():
     print("Initiating Procedural Animation Workflow...")
-    
     file_paths = check_file_structure()
     
-    # Step 1: Generate Story
+    # Step 1: Run Story Script
     story_cmd = f"python {file_paths['story_generator.py']}"
     rc = run_step(story_cmd, "Gemini Story Generation")
     if rc != 0:
-        print("Story generation failed. Exiting workflow.")
+        print("Story generation failed. Exiting pipeline.")
         sys.exit(1)
         
-    # Step 2: Blender Render
+    # Step 2: Run Blender Render with Auto-Kill Safeguard at 4.5 hours
     blender_command = f"timeout 270m blender -b -P {file_paths['blender_render.py']} -- --blender"
     rc = run_step(blender_command, "Blender Procedural Core Render Engine")
     if rc == 124:
-        print("[WATCHDOG TIMEOUT] Blender hung or took too long. Forcing compilation with partial frames.")
+        print("[WATCHDOG TIMEOUT] Blender engine hung or runtime exceeded. Safe falling back to AV Merger.")
         
-    # Step 3: FFmpeg Audio/Video Compile
+    # Step 3: Run FFmpeg Compilations via Blender Script
     merge_cmd = f"python {file_paths['blender_render.py']}"
     run_step(merge_cmd, "FFmpeg AV Assembly Audio/Video Merger")
     
-    print("Pipeline Complete.")
+    print("Pipeline Execution Finished Successfully.")
 
 if __name__ == "__main__":
     main()
