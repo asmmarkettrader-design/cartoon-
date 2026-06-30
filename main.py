@@ -7,7 +7,6 @@ def check_file_structure():
     print("\n--- Smart Deep Repository Scan ---")
     paths = {}
     
-    # 1. Fuzzy match for story generator
     for root, dirs, files in os.walk("."):
         for f in files:
             if "story" in f.lower() and f.endswith(".py"):
@@ -15,7 +14,6 @@ def check_file_structure():
                 print(f"[FOUND STORY SCRIPT] -> {paths['story_generator.py']}")
                 break
                 
-    # 2. Fuzzy match for blender renderer
     for root, dirs, files in os.walk("."):
         for f in files:
             if "blender" in f.lower() and f.endswith(".py"):
@@ -29,16 +27,28 @@ def check_file_structure():
         
     return paths
 
-def run_step(command, description):
+def run_step(command, description, script_dir):
     print(f"\n==================== STARTING: {description} ====================")
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    
+    # Injecting PYTHONPATH so sub-scripts can seamlessly locate sibling modules
+    custom_env = os.environ.copy()
+    custom_env["PYTHONPATH"] = os.path.abspath(script_dir) + os.pathsep + custom_env.get("PYTHONPATH", "")
+    
+    process = subprocess.Popen(
+        command, 
+        shell=True, 
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.STDOUT, 
+        text=True,
+        env=custom_env
+    )
     
     while True:
         output = process.stdout.readline()
         if output == '' and process.poll() is not None:
             break
         if output:
-            print(output.strip(), flush=True) # Forces immediate execution prints to terminal
+            print(output.strip(), flush=True)
             
     rc = process.poll()
     print(f"==================== FINISHED: {description} (Exit Code: {rc}) ====================\n")
@@ -48,22 +58,25 @@ def main():
     print("Initiating Procedural Animation Workflow...")
     file_paths = check_file_structure()
     
+    # Get the directory of the scripts folder dynamically
+    script_directory = os.path.dirname(file_paths['story_generator.py'])
+    
     # Step 1: Run Story Script
     story_cmd = f"python {file_paths['story_generator.py']}"
-    rc = run_step(story_cmd, "Gemini Story Generation")
+    rc = run_step(story_cmd, "Gemini Story Generation", script_directory)
     if rc != 0:
         print("Story generation failed. Exiting pipeline.")
         sys.exit(1)
         
-    # Step 2: Run Blender Render with Auto-Kill Safeguard at 4.5 hours
+    # Step 2: Run Blender Render
     blender_command = f"timeout 270m blender -b -P {file_paths['blender_render.py']} -- --blender"
-    rc = run_step(blender_command, "Blender Procedural Core Render Engine")
+    rc = run_step(blender_command, "Blender Procedural Core Render Engine", script_directory)
     if rc == 124:
         print("[WATCHDOG TIMEOUT] Blender engine hung or runtime exceeded. Safe falling back to AV Merger.")
         
-    # Step 3: Run FFmpeg Compilations via Blender Script
+    # Step 3: Run FFmpeg Compilations
     merge_cmd = f"python {file_paths['blender_render.py']}"
-    run_step(merge_cmd, "FFmpeg AV Assembly Audio/Video Merger")
+    run_step(merge_cmd, "FFmpeg AV Assembly Audio/Video Merger", script_directory)
     
     print("Pipeline Execution Finished Successfully.")
 
